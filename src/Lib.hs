@@ -102,7 +102,9 @@ getModuleName haskellFile = do
             case moduleHead of
                 Just (ModuleHead _ (ModuleName _ moduleName) _ _) -> return $ Just moduleName
                 _ -> return Nothing
-        ParseFailed _ err -> error $ "Parse failed" <> err
+        ParseFailed (SrcLoc fileName line column) err -> do
+            print $ "parse failed for " <> fileName <> " at line " <> show line <> " at column " <> show column
+            error $ "parse failed " <> err
 
 getModuleNameFromImport (ImportDecl _ (ModuleName _ moduleName) _ _ _ _ _ _) = moduleName
 
