@@ -6,16 +6,21 @@ import Control.Lens
 import Control.Monad
 import Data.Maybe
 import Data.Yaml
+import GHC.TypeLits
 import Language.Haskell.Exts
 import System.Directory
 import System.FilePath
 
 getImports :: String -> IO [ImportDecl SrcSpanInfo]
 getImports fileName = do
-    parseResult <- parseFile fileName
+    parseResult <-
+        parseFileWithMode (defaultParseMode{fixities = Just []}) fileName
     case parseResult of
         ParseOk (Module _ _ _ imports _) -> return imports
-        ParseFailed _ _ -> error "Parse failed"
+        ParseFailed (SrcLoc fileName line column) err -> do
+            putStrLn $ "\x1b[31m ERROR: parse failed for " <> fileName <> " at line " <> show line <> " at column " <> show column <> "\x1b[0m "
+            putStrLn $ "\x1b[31m ERROR: parse failed " <> err <> "\x1b[0m "
+            pure []
 
 prettyPrintImportList :: [ImportDecl SrcSpanInfo] -> [String]
 prettyPrintImportList [] = []
@@ -96,15 +101,16 @@ recursiveHunForHaskellFiles excluded directory = do
     return (haskellFiles ++ subdirFiles)
 
 getModuleName haskellFile = do
-    parseResult <- parseFile haskellFile
+    parseResult <- parseFileWithMode (defaultParseMode{fixities = Just []}) haskellFile
     case parseResult of
         ParseOk (Module _ moduleHead _ _ _) -> do
             case moduleHead of
                 Just (ModuleHead _ (ModuleName _ moduleName) _ _) -> return $ Just moduleName
                 _ -> return Nothing
         ParseFailed (SrcLoc fileName line column) err -> do
-            print $ "parse failed for " <> fileName <> " at line " <> show line <> " at column " <> show column
-            error $ "parse failed " <> err
+            putStrLn $ "\x1b[31m ERROR: parse failed for " <> fileName <> " at line " <> show line <> " at column " <> show column <> "\x1b[0m "
+            putStrLn $ "\x1b[31m ERROR: parse failed " <> err <> "\x1b[0m "
+            return Nothing
 
 getModuleNameFromImport (ImportDecl _ (ModuleName _ moduleName) _ _ _ _ _ _) = moduleName
 
