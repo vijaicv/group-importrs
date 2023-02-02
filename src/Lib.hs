@@ -102,7 +102,7 @@ getModuleName haskellFile = do
             case moduleHead of
                 Just (ModuleHead _ (ModuleName _ moduleName) _ _) -> return $ Just moduleName
                 _ -> return Nothing
-        ParseFailed _ _ -> error "Parse failed"
+        ParseFailed _ err -> error $ "Parse failed" <> err
 
 getModuleNameFromImport (ImportDecl _ (ModuleName _ moduleName) _ _ _ _ _ _) = moduleName
 
